@@ -7,7 +7,10 @@ Set up a new nodejs project and do the following:
         getAllUsers - GET
     Books:
         Create - POST
-        Delete - DELET
+        Delete - DELETE
         LoanOut - POST
         Return - POST
         Update - PUT
+
+You’ll get a better understanding of each of these routes later
+(you’ll also get a chance to change the structure as you like)

@@ -1,8 +1,12 @@
 const http = require("http")
 const {
-    getAllUsers, 
+    // User
+    getAllUsers,
     createUser,
-    authenticateUser 
+    authenticateUser,
+    // Book
+    createBook
+
 } = require("./api")
 
 const port = process.env["PORT"] || 3000
@@ -10,7 +14,12 @@ const port = process.env["PORT"] || 3000
 const server = http.createServer(async(req, res) => {
     res.setHeader("Content-Type", "application/json")
 
-    // User routes
+    /**
+     * User routes
+     * - Get all users
+     * - Create user
+     * - Authenticate user
+     */
     if (req.url === "/users" && req.method === "GET") {
         const users = await getAllUsers()
         res.end(users)
@@ -36,6 +45,23 @@ const server = http.createServer(async(req, res) => {
                     res.end(err.toString())
                 })
         })
+    }
+
+    /**
+     * Book routes
+     * - Create a new book
+     */
+    if (req.url === "/books" && req.method === "POST") {
+        // Create a new book
+        const buffers = []
+        req.on("data", chunk => buffers.push(chunk))
+        req.on("end", async() => {
+            const data = Buffer.concat(buffers).toString("utf8")
+            const book = JSON.parse(data)
+            const books = await createBook(book)
+            res.end(JSON.stringify(books))
+        })
+
     }
 })
 
