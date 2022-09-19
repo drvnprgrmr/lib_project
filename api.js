@@ -1,7 +1,4 @@
-const { rejects } = require("assert")
-const { error } = require("console")
 const fs = require("fs/promises")
-const { json } = require("stream/consumers")
 
 const usersDB = "./db/users.json"
 
@@ -15,6 +12,21 @@ async function createUser(user) {
     return db
 }
 
+async function authenticateUser(auth) {
+    const db = await readDB(usersDB)
+    let foundUser
+    await db.forEach((user) => {
+        if (user.username === auth.username) {
+            foundUser = user
+            return
+        }
+    });
+    if (!foundUser) throw new Error("User doesn't exist")
+    else if (foundUser.password !== auth.password) {
+        throw new Error("Incorrect password")
+    } else return foundUser
+
+}
 
 async function readDB(loc) {
     const content = await fs.readFile(loc, "utf8")
@@ -34,7 +46,9 @@ async function appendDB(loc, data) {
     }
 }
 
+
 module.exports = {
     getAllUsers,
-    createUser
+    createUser,
+    authenticateUser
 }
