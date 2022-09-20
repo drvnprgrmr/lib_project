@@ -52,9 +52,12 @@ async function authenticateUser(auth) {
 async function createBook(book) {
     let newbook = {}
     
+    // Check book matches schema
+    if (!book.title) throw new Error("Invalid format")
+
     // Auto-increment book id and book count
     newbook.id = meta.bookCount + 1
-    meta.bookCount = book.id
+    meta.bookCount = newbook.id
     
     // Set newbook's title
     newbook.title = book.title
@@ -65,7 +68,68 @@ async function createBook(book) {
     return books
 }
 
+async function deleteBook(id) {
+    let books = await readDB(bookDB)
+    let foundBook
 
+    await books.forEach((book, i) => {
+        if (book.id === id) {
+            foundBook = book
+            books.splice(i, 1)
+            return
+        }
+    })
+
+    if (!foundBook) throw new Error("Book does not exist")
+
+    await writeDB(bookDB, books)
+
+    return books
+
+}
+
+async function updateBook(id, updates) {
+    let books = await readDB(bookDB)
+    let updatedBook
+
+    // Only accept updates to these fields
+    let acceptedFields = [
+        "title",
+        "status"
+    ]
+    Object.keys(updates).forEach(field => {
+        if (!(acceptedFields.find(x => x === field))) {
+            throw new Error("Field not accepted")
+        }
+    })
+
+    let notFound = true
+
+    await books.forEach((book, i) => {
+        if (book.id === id) {
+            // Update the book
+            updatedBook = {
+                ...book,
+                ...updates
+            }
+
+            // Remove previous book
+            books.splice(i, 1)
+
+            // Add updated book
+            books.splice(i, 0, updatedBook)
+
+            notFound = false
+            return
+        }
+    });
+
+    if (notFound) throw new Error("Book not found")
+
+    await writeDB(bookDB, JSON.stringify(books))
+
+    return books
+}
 
 // Utils
 
@@ -78,7 +142,6 @@ async function appendDB(loc, data) {
     try {
         const db = await readDB(loc)
         db.push(data)
-        console.log(db)
         await fs.writeFile(loc, JSON.stringify(db), "utf8")
         return db
 
@@ -87,13 +150,11 @@ async function appendDB(loc, data) {
     }
 }
 
-// async function updateDB(loc, key, value) {
-//     const db = await readDB(loc)
-//     console.log(db[key])
-//     eval(`db.${key} = value`)
-//     console.log(db[key])
-//     await fs.writeFile(loc, JSON.stringify(db))
-// }
+async function writeDB(loc, data) {
+    const err = await fs.writeFile(loc, JSON.stringify(data), "utf8")
+    if (err) throw new Error(err.toString())
+    return data
+}
 
 module.exports = {
     // User
@@ -101,5 +162,7 @@ module.exports = {
     createUser,
     authenticateUser,
     // Book
-    createBook
+    createBook,
+    deleteBook,
+    updateBook
 }

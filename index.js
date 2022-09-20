@@ -5,7 +5,9 @@ const {
     createUser,
     authenticateUser,
     // Book
-    createBook
+    createBook,
+    deleteBook,
+    updateBook
 
 } = require("./api")
 
@@ -50,6 +52,8 @@ const server = http.createServer(async(req, res) => {
     /**
      * Book routes
      * - Create a new book
+     * - Delete book
+     * - Update book
      */
     if (req.url === "/books" && req.method === "POST") {
         // Create a new book
@@ -58,10 +62,47 @@ const server = http.createServer(async(req, res) => {
         req.on("end", async() => {
             const data = Buffer.concat(buffers).toString("utf8")
             const book = JSON.parse(data)
-            const books = await createBook(book)
-            res.end(JSON.stringify(books))
+            createBook(book).then(books => {
+                res.end(JSON.stringify(books))
+            }).catch(err => {
+                res.writeHead(400).end(err.toString())
+            })
+            
         })
 
+    } else if (req.url === "/books" && req.method === "DELETE") {
+        // Delete book
+        const buffers = []
+        req.on("data", chunk => buffers.push(chunk))
+        req.on("end", async() => {
+            const data = Buffer.concat(buffers).toString("utf8")
+            const { id } = JSON.parse(data)
+            await deleteBook(id).then((books) => {
+                res.end(JSON.stringify(books))
+            }).catch(err => {
+                res.writeHead(400).end(err.toString())
+            })
+            res.end()
+        })
+    } else if (req.url === "/books" && req.method === "PUT") {
+        // Update book
+        const buffers = []
+        req.on("data", chunk => buffers.push(chunk))
+        req.on("end", async() => {
+            const data = Buffer.concat(buffers).toString("utf8")
+            let id, updates
+            try {
+                ({id, updates} = JSON.parse(data))
+            } catch (err) {
+                res.writeHead(400).end(err.toString())
+                return
+            } 
+            updateBook(id, updates).then(updatedBook => {
+                res.end(JSON.stringify(updatedBook))
+            }).catch(err => {
+                res.writeHead(400).end(err.toString())
+            })
+        })
     }
 })
 
